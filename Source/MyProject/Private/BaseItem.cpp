@@ -2,7 +2,7 @@
 
 
 #include "BaseItem.h"
-#include "MyProject/Public/BaseItem.h"
+
 
 // Sets default values
 ABaseItem::ABaseItem()
