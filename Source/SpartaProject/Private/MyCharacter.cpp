@@ -27,6 +27,9 @@ AMyCharacter::AMyCharacter()
 	SprintMultiplier = 1.5f;
 	SprintSpeed = NormalSpeed * SprintMultiplier;
 	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+	
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 }
 
 // Called when the game starts or when spawned

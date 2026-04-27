@@ -17,6 +17,10 @@ class SPARTAPROJECT_API AMineItem : public ABaseItem
 public:
 	AMineItem();
 	
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	USphereComponent* ExplosionCollision;
+	
 	virtual void ActivateItem(AActor* Activator) override;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DestroyDelay;
@@ -24,4 +28,8 @@ public:
 	float DestroyRadius;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DestroyDamage;
+	
+	FTimerHandle DestroyTimerHandle;
+	
+	void Explode();
 };

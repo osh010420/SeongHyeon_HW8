@@ -7,6 +7,7 @@
 #include "MyInterface.h"
 #include "BaseItem.generated.h"
 
+class USphereComponent;
 UCLASS()
 class SPARTAPROJECT_API ABaseItem : public AActor, public IMyInterface
 {
@@ -23,8 +24,27 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName ItemType;
 	
-	virtual void OverapItem(AActor* Actor);
-	virtual void EndOverapItem(AActor* Actor);
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	USceneComponent* Scene;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UStaticMeshComponent* StaticMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	USphereComponent* Collision;
+	
+
+	virtual void OnItemOverlap(
+			UPrimitiveComponent* OverlappedComp,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult& SweepResult) override;
+
+	virtual void OnItemEndOverlap(
+			UPrimitiveComponent* OverlappedComp,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex) override;
 	virtual void ActivateItem(AActor* Activator);
 	virtual FName GetItemType() const;
 	

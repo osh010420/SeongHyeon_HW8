@@ -2,6 +2,7 @@
 
 
 #include "MineItem.h"
+#include "Components/SphereComponent.h"
 
 AMineItem::AMineItem()
 {
@@ -10,10 +11,29 @@ AMineItem::AMineItem()
 	DestroyDamage = 30.0f;
 	DestroyDelay = 5.0f;
 	DestroyRadius = 300.0f;
+	
+	ExplosionCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ExplosionCollision"));
+	ExplosionCollision->InitSphereRadius(DestroyRadius);
+	ExplosionCollision->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	ExplosionCollision->SetupAttachment(Scene);
 }
 
 void AMineItem::ActivateItem(AActor* Activator)
 {
+	GetWorld()->GetTimerManager().SetTimer(DestroyTimerHandle, this, &AMineItem::Explode, DestroyDelay);
+}
+
+void AMineItem::Explode()
+{
+	TArray<AActor*> DestroyActors;
+	ExplosionCollision->GetOverlappingActors(DestroyActors);
 	
+	for (AActor* Actor : DestroyActors)
+	{
+		if (Actor && Actor->ActorHasTag("Player"))
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Player damaged %f by MineItem"), DestroyDamage));
+		}
+	}
 	DestroyItem();
 }
