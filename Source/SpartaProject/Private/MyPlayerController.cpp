@@ -3,6 +3,8 @@
 
 #include "MyPlayerController.h"
 #include "EnhancedInputSubsystems.h"
+#include "EnhancedInputComponent.h"
+#include "Blueprint/UserWidget.h"
 
 AMyPlayerController::AMyPlayerController()
 	: InputMappingContext(nullptr),
@@ -28,6 +30,14 @@ void AMyPlayerController::BeginPlay()
 				Subsystem->AddMappingContext(InputMappingContext, 0);
 				// 0 = 우선순위 (낮을수록 높은 우선순위)
 			}
+		}
+	}
+	if (HUDWidgetClass)
+	{
+		UUserWidget* HUDWidget = CreateWidget<UUserWidget>(this, HUDWidgetClass);
+		if (HUDWidget)
+		{
+			HUDWidget->AddToViewport();
 		}
 	}
 }

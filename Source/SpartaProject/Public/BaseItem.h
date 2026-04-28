@@ -45,8 +45,9 @@ protected:
 			AActor* OtherActor,
 			UPrimitiveComponent* OtherComp,
 			int32 OtherBodyIndex) override;
-	virtual void ActivateItem(AActor* Activator);
-	virtual FName GetItemType() const;
+	
+	virtual void ActivateItem(AActor* Activator) override;
+	virtual FName GetItemType() const override;
 	
 	virtual void DestroyItem();
 

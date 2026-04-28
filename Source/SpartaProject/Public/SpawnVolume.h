@@ -26,12 +26,12 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	FVector GetRandomPointInVolume() const;
-
-	UFUNCTION(BlueprintCallable)
-	void SpawnItem(TSubclassOf<AActor> ItemClass);
 	
 	UFUNCTION(BlueprintCallable, Category = "Spawning")
-	void SpawnRandomItem();
+	AActor* SpawnRandomItem();
+	
+	UFUNCTION(BlueprintCallable)
+	AActor* SpawnItem(TSubclassOf<AActor> ItemClass);
 	
 	FItemSpawnRow* GetRandomItem() const;
 };

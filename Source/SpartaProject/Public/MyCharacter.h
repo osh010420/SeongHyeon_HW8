@@ -38,6 +38,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxHealth;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Health;
+	
 	UFUNCTION()
 	void Move(const FInputActionValue& value);
 	
@@ -55,6 +61,21 @@ public:
 	
 	UFUNCTION()
 	void StopSprint(const FInputActionValue& value);
+	
+	UFUNCTION(BlueprintPure, Category = "Health")
+	int32 GetHealth() const;
+	
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void AddHealth(float Amount);
+	
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	virtual void OnDeath();
+	
+	virtual float TakeDamage(
+		float DamageAmount, 
+		struct FDamageEvent const& DamageEvent, 
+		AController* EventInstigator, 
+		AActor* DamageCauser) override;
 	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")

@@ -8,6 +8,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
+
 // Sets default values
 AMyCharacter::AMyCharacter()
 {
@@ -30,6 +31,9 @@ AMyCharacter::AMyCharacter()
 	
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+	
+	MaxHealth = 100.0f;
+	Health = MaxHealth;
 }
 
 // Called when the game starts or when spawned
@@ -172,4 +176,46 @@ void AMyCharacter::StopSprint(const FInputActionValue& value)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	}
+}
+
+int32 AMyCharacter::GetHealth() const
+{
+	return Health;
+}
+
+void AMyCharacter::AddHealth(float Amount)
+{
+	Health = FMath::Clamp(Health + Amount, 0.0f, MaxHealth);
+	UE_LOG(LogTemp, Log, TEXT("Health increased to: %f"), Health);
+}
+
+float AMyCharacter::TakeDamage(
+	float DamageAmount, 
+	FDamageEvent const& DamageEvent, 
+	AController* EventInstigator,
+	AActor* DamageCauser)
+{
+	// 기본 데미지 처리 로직 호출 (필수는 아님)
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// 체력을 데미지만큼 감소시키고, 0 이하로 떨어지지 않도록 Clamp
+	Health = FMath::Clamp(Health - DamageAmount, 0.0f, MaxHealth);
+	UE_LOG(LogTemp, Warning, TEXT("Health decreased to: %f"), Health);
+
+	// 체력이 0 이하가 되면 사망 처리
+	if (Health <= 0.0f)
+	{
+		OnDeath();
+	}
+
+	// 실제 적용된 데미지를 반환
+	return ActualDamage;
+}
+
+
+void AMyCharacter::OnDeath()
+{
+	UE_LOG(LogTemp, Error, TEXT("Character is Dead!"));
+
+	// 사망 후 로직
 }
