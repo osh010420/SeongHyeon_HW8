@@ -8,7 +8,9 @@
 
 class USpringArmComponent;
 class UCameraComponent;
+class UWidgetComponent;
 struct FInputActionValue;
+
 
 UCLASS()
 class SPARTAPROJECT_API AMyCharacter : public ACharacter
@@ -37,6 +39,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	UWidgetComponent* OverHeadWidget;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MaxHealth;
@@ -70,6 +75,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	virtual void OnDeath();
+	
+	void UpdateOverHeadHP();
 	
 	virtual float TakeDamage(
 		float DamageAmount, 

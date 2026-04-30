@@ -20,6 +20,10 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	USphereComponent* ExplosionCollision;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* DestroyParticle;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item|Effects")
+	USoundBase* ExplosionSound;
 	
 	virtual void ActivateItem(AActor* Activator) override;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -29,6 +33,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DestroyDamage;
 	
+	bool bHasExploded;
 	FTimerHandle DestroyTimerHandle;
 	
 	void Explode();

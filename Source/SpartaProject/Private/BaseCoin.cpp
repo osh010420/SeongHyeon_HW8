@@ -12,6 +12,7 @@ ABaseCoin::ABaseCoin()
 
 void ABaseCoin::ActivateItem(AActor* Activator)
 {
+	Super::ActivateItem(Activator);
 	if (Activator && Activator->ActorHasTag("Player"))
 	{
 		// 점수 획득 디버그 메시지

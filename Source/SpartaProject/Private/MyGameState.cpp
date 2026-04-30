@@ -15,7 +15,7 @@ AMyGameState::AMyGameState()
 	score = 0;
 	SpawnedCoin = 0;
 	CollectedCoin = 0;
-	LevelDuration = 30.0f;
+	LevelDuration = 10.0f;
 	CurrentLevel = 0;
 	MaxLevel = 3;
 }
@@ -23,9 +23,16 @@ AMyGameState::AMyGameState()
 void AMyGameState::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	// 게임 시작 시 첫 레벨부터 진행
+
 	StartLevel();
+	
+	GetWorldTimerManager().SetTimer(
+			HUDUpdateTimer,
+			this,
+			&AMyGameState::UpdateHUD,
+			0.1f,
+			true
+		);
 }
 
 
@@ -48,6 +55,13 @@ int32 AMyGameState::GetScore() const
 
 void AMyGameState::StartLevel()
 {
+	if (APlayerController* Controller = GetWorld()->GetFirstPlayerController())
+	{
+		if (AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(Controller))
+		{
+			MyPlayerController->ShowGameHUD();
+		}
+	}
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(GameInstance);
@@ -89,6 +103,8 @@ void AMyGameState::StartLevel()
 		&AMyGameState::OnLevelTimeUp,
 		LevelDuration,
 		false);
+	
+	UpdateHUD();
 	
 	UE_LOG(LogTemp, Warning, TEXT("Level %d Start!, Spawned %d coin"),
 			CurrentLevel + 1,
@@ -147,5 +163,47 @@ void AMyGameState::EndLevel()
 
 void AMyGameState::OnGameOver()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Game Over!!"));
+	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+	{
+		if (AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController))
+		{
+			MyPlayerController->SetPause(true);
+			MyPlayerController->ShowMainMenu(true);
+		}
+	}
+}
+
+void AMyGameState::UpdateHUD()
+{
+	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+	{
+		AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController);
+		{
+			if (UUserWidget* HUDWidget = MyPlayerController->GetHUDWidget())
+			{
+				if (UTextBlock* TimeText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Timer"))))
+				{
+					float RemainingTime = GetWorldTimerManager().GetTimerRemaining(LevelTimer);
+					TimeText->SetText(FText::FromString(FString::Printf(TEXT("Time: %.1f"), RemainingTime)));
+				}
+				
+				if (UTextBlock* ScoreText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Score"))))
+				{
+					if (UGameInstance* GameInstance = GetGameInstance())
+					{
+						UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(GameInstance);
+						if (MyGameInstance)
+						{
+							ScoreText->SetText(FText::FromString(FString::Printf(TEXT("Score: %d"), MyGameInstance->TotalScore)));
+						}
+					}
+				}
+				
+				if (UTextBlock* LevelIndexText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Level"))))
+				{
+					LevelIndexText->SetText(FText::FromString(FString::Printf(TEXT("Level: %d"), CurrentLevel + 1)));
+				}
+			}
+		}
+	}
 }

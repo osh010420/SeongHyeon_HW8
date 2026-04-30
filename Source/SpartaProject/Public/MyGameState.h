@@ -19,13 +19,13 @@ public:
 	
 	virtual void BeginPlay() override;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Score")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Score")
 	int32 score;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coin")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Coin")
 	int32 SpawnedCoin;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coin")
 	int32 CollectedCoin;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Level")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Level")
 	float LevelDuration;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Level")
 	int32 CurrentLevel;

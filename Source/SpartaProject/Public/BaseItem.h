@@ -30,7 +30,10 @@ protected:
 	UStaticMeshComponent* StaticMesh;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	USphereComponent* Collision;
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* ParticleSystem;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* Sound;
 
 	virtual void OnItemOverlap(
 			UPrimitiveComponent* OverlappedComp,

@@ -4,9 +4,12 @@
 #include "MyCharacter.h"
 #include "MyPlayerController.h"
 #include "EnhancedInputComponent.h"
+#include "MyGameState.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Components/TextBlock.h"
 
 
 // Sets default values
@@ -24,8 +27,12 @@ AMyCharacter::AMyCharacter()
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
 	CameraComp->bUsePawnControlRotation = false;  
 	
+	OverHeadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverHeadHP"));
+	OverHeadWidget->SetupAttachment(GetMesh());
+	OverHeadWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	
 	NormalSpeed = 600.0f;
-	SprintMultiplier = 1.5f;
+	SprintMultiplier = 2.0f;
 	SprintSpeed = NormalSpeed * SprintMultiplier;
 	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
 	
@@ -40,7 +47,7 @@ AMyCharacter::AMyCharacter()
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	UpdateOverHeadHP();
 }
 
 // Called every frame
@@ -186,7 +193,8 @@ int32 AMyCharacter::GetHealth() const
 void AMyCharacter::AddHealth(float Amount)
 {
 	Health = FMath::Clamp(Health + Amount, 0.0f, MaxHealth);
-	UE_LOG(LogTemp, Log, TEXT("Health increased to: %f"), Health);
+	UpdateOverHeadHP();
+	
 }
 
 float AMyCharacter::TakeDamage(
@@ -200,7 +208,7 @@ float AMyCharacter::TakeDamage(
 
 	// 체력을 데미지만큼 감소시키고, 0 이하로 떨어지지 않도록 Clamp
 	Health = FMath::Clamp(Health - DamageAmount, 0.0f, MaxHealth);
-	UE_LOG(LogTemp, Warning, TEXT("Health decreased to: %f"), Health);
+	UpdateOverHeadHP();
 
 	// 체력이 0 이하가 되면 사망 처리
 	if (Health <= 0.0f)
@@ -215,7 +223,21 @@ float AMyCharacter::TakeDamage(
 
 void AMyCharacter::OnDeath()
 {
-	UE_LOG(LogTemp, Error, TEXT("Character is Dead!"));
+	AMyGameState* GameState = GetWorld() ? GetWorld()->GetGameState<AMyGameState>() : nullptr;
+	if (GameState)
+	{
+		GameState->OnGameOver();
+	}
+}
 
-	// 사망 후 로직
+void AMyCharacter::UpdateOverHeadHP()
+{
+	if (!OverHeadWidget) return;
+	
+	UUserWidget* OverHeadWidgetInstance = OverHeadWidget->GetUserWidgetObject();
+	if (!OverHeadWidgetInstance) return;
+	if (UTextBlock* HPText = Cast<UTextBlock>(OverHeadWidgetInstance->GetWidgetFromName(TEXT("OverHeadHP"))))
+	{
+		HPText->SetText(FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), Health, MaxHealth)));
+	}
 }
