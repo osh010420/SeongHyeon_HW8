@@ -9,6 +9,8 @@
 #include "MyPlayerController.h"
 #include "Components/TextBlock.h"
 #include "Blueprint/UserWidget.h"
+#include "WaveStruct.h"
+#include "BaseItem.h"
 
 AMyGameState::AMyGameState()
 {
@@ -18,6 +20,9 @@ AMyGameState::AMyGameState()
 	LevelDuration = 10.0f;
 	CurrentLevel = 0;
 	MaxLevel = 3;
+	
+	CurrentWave = 0;
+	MaxWave = 0;
 }
 
 void AMyGameState::BeginPlay()
@@ -70,69 +75,49 @@ void AMyGameState::StartLevel()
 			CurrentLevel = MyGameInstance->CurrentLevelIndex;
 		}
 	}
-
-	SpawnedCoin = 0;
-	CollectedCoin = 0;
-	
-	TArray<AActor*> FoundVolumes;
-	UGameplayStatics::GetAllActorsOfClass(
-		GetWorld(),
-		ASpawnVolume::StaticClass(),
-		FoundVolumes);
-	
-	const int32 VolumeCount = 40;
-	
-	for (int32 i = 0; i<VolumeCount; ++i)
+    
+	// 웨이브 데이터 테이블에서 MaxWave 가져오기
+	if (WaveDataTable)
 	{
-		if (FoundVolumes.Num() > 0)
-		{
-			ASpawnVolume* SpawnedVolume = Cast<ASpawnVolume>(FoundVolumes[0]);
-			if (SpawnedVolume)
-			{
-				AActor* SpawnActor = SpawnedVolume->SpawnRandomItem();
-				if (SpawnActor && SpawnActor->IsA(ABaseCoin::StaticClass()))
-				{
-					SpawnedCoin++;
-				}
-			}
-		}
+		TArray<FWaveStruct*> AllWaveStructs;
+		static const FString ContextString(TEXT("WaveContext"));
+		WaveDataTable->GetAllRows(ContextString, AllWaveStructs);
+		MaxWave = AllWaveStructs.Num();
 	}
-	GetWorldTimerManager().SetTimer(
-		LevelTimer,
-		this,
-		&AMyGameState::OnLevelTimeUp,
-		LevelDuration,
-		false);
-	
-	UpdateHUD();
-	
-	UE_LOG(LogTemp, Warning, TEXT("Level %d Start!, Spawned %d coin"),
-			CurrentLevel + 1,
-			SpawnedCoin);
+    
+	// 첫 웨이브 시작 (아이템 스폰은 StartWave에서!)
+	CurrentWave = 0;
+	StartWave();
+    
+	UE_LOG(LogTemp, Warning, TEXT("Level %d Start!"), CurrentLevel + 1);
 }
 
 void AMyGameState::OnLevelTimeUp()
 {
-	EndLevel();
+	if (CurrentWave>MaxWave)
+	{
+		EndLevel();
+	}
 }
 
 void AMyGameState::OnCoinCollected()
 {
 	CollectedCoin++;
-	
+    
 	UE_LOG(LogTemp, Warning, TEXT("Coin Collected: %d / %d"), 
-			CollectedCoin,
-			SpawnedCoin)
+		CollectedCoin,
+		SpawnedCoin);
 	
 	if (SpawnedCoin > 0 && CollectedCoin >= SpawnedCoin)
 	{
-		EndLevel();
+		EndWave();
 	}
 }
 
 void AMyGameState::EndLevel()
 {
 	GetWorldTimerManager().ClearTimer(LevelTimer);
+	GetWorldTimerManager().ClearTimer(WaveTimer);
 	
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
@@ -183,7 +168,7 @@ void AMyGameState::UpdateHUD()
 			{
 				if (UTextBlock* TimeText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Timer"))))
 				{
-					float RemainingTime = GetWorldTimerManager().GetTimerRemaining(LevelTimer);
+					float RemainingTime = GetWorldTimerManager().GetTimerRemaining(WaveTimer);
 					TimeText->SetText(FText::FromString(FString::Printf(TEXT("Time: %.1f"), RemainingTime)));
 				}
 				
@@ -203,7 +188,120 @@ void AMyGameState::UpdateHUD()
 				{
 					LevelIndexText->SetText(FText::FromString(FString::Printf(TEXT("Level: %d"), CurrentLevel + 1)));
 				}
+				
+				if (UTextBlock* WaveIndexText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Wave"))))
+				{
+					WaveIndexText->SetText(FText::FromString(FString::Printf(TEXT("Wave %d"), CurrentWave + 1)));
+				}
 			}
 		}
 	}
 }
+
+void AMyGameState::StartWave()
+{
+	if (!WaveDataTable) return;
+    
+	// 웨이브 데이터 가져오기
+	TArray<FWaveStruct*> AllWaveStructs;
+	static const FString ContextString(TEXT("WaveContext"));
+	WaveDataTable->GetAllRows(ContextString, AllWaveStructs);
+    
+	if (!AllWaveStructs.IsValidIndex(CurrentWave)) return;
+    
+	//  현재 웨이브 데이터 꺼내기
+	FWaveStruct* CurrentWaveData = AllWaveStructs[CurrentWave];
+	if (!CurrentWaveData) return;
+    
+	// 코인 카운트 초기화
+	SpawnedCoin = 0;
+	CollectedCoin = 0;
+    
+	// SpawnVolume 찾기
+	TArray<AActor*> FoundVolumes;
+	UGameplayStatics::GetAllActorsOfClass(
+		GetWorld(),
+		ASpawnVolume::StaticClass(),
+		FoundVolumes);
+    
+	//  웨이브 데이터의 ItemSpawnCount만큼 스폰
+	const int32 VolumeCount = CurrentWaveData->ItemSpawnCount;
+    
+	for (int32 i = 0; i < VolumeCount; ++i)
+	{
+		if (FoundVolumes.Num() > 0)
+		{
+			ASpawnVolume* SpawnedVolume = Cast<ASpawnVolume>(FoundVolumes[0]);
+			if (SpawnedVolume)
+			{
+				AActor* SpawnActor = SpawnedVolume->SpawnRandomItem();
+				if (SpawnActor && SpawnActor->IsA(ABaseCoin::StaticClass()))
+				{
+					SpawnedCoin++;
+				}
+			}
+		}
+	}
+    
+	//  웨이브 데이터의 시간으로 타이머 시작
+	GetWorldTimerManager().SetTimer(
+		WaveTimer,
+		this,
+		&AMyGameState::OnWaveTimeUP,
+		CurrentWaveData->WaveDuration,  // ← 웨이브 시간 사용
+		false);
+    
+	UpdateHUD();
+    
+	// 웨이브 시작 알림
+	UE_LOG(LogTemp, Warning, TEXT("Wave %d Start! Items: %d, Duration: %.1f"),
+		CurrentWave + 1,
+		VolumeCount,
+		CurrentWaveData->WaveDuration);
+    
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			3.0f,
+			FColor::Yellow,
+			FString::Printf(TEXT("Wave %d Start!"), CurrentWave + 1));
+	}
+}
+
+void AMyGameState::OnWaveTimeUP()
+{
+	EndWave();
+}
+
+void AMyGameState::EndWave()
+{
+	
+	GetWorldTimerManager().ClearTimer(WaveTimer);
+	
+	TArray<AActor*> RemainingItems;
+	UGameplayStatics::GetAllActorsOfClass(
+		GetWorld(),
+		ABaseItem::StaticClass(),  
+		RemainingItems);
+    
+	for (AActor* Item : RemainingItems)
+	{
+		if (Item)
+		{
+			Item->Destroy();
+		}
+	}
+	
+	CurrentWave++;
+    
+	
+	if (CurrentWave >= MaxWave)
+	{
+		EndLevel();
+		return;
+	}
+	
+	StartWave();
+}
+
